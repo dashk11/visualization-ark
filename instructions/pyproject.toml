@@ -1,0 +1,17 @@
+[project]
+name = "ark_app"
+description = "Application to visualize real-time process data"
+dependencies = [
+    "flask",
+    "psycopg2-binary",
+    "plotly",
+    "pandas",
+]
+version = "0.0.0"
+
+[project.scripts]
+run_ark_app = "ark_app:main"
+
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"

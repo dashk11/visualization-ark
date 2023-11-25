@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Bioreactor Dashboard</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/css/bootstrap.min.css" />
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="{{url_for('static', filename='dashboard.css')}}">
+</head>
+<body style="font-family: Gabarito; background-color: #fbfbfd;">
+    <div>
+        <div class="container">
+            <!-- <div class="shadow p-3 mb-5 rounded" style="padding: 20px 0; margin-top: 20px; background-color: #E3F4F4;"> -->
+                <div class="shadow p-3 mb-5 bg-white rounded">
+                    <svg id="multilineSvg" class="chart"></svg>
+                </div>
+            <!-- </div> -->
+        </div>
+
+        <div class="container">
+            Duration
+            <div class="row dropdown-container">
+                
+                <div class="col-lg-6 barSubgraphSelect">
+                    <select class="form-select" id="seedSelect" onchange='plotSubGraphs();' style="width: 100%;">
+                        <option value="daily" selected>Daily</option>
+                        <option value="15min">15 min</option>
+                        <option value="30min">30 min</option>
+                    </select>
+                </div>
+
+                <div class="col-lg-6 legend">
+                    <div class="legend-item" onclick="handleLegendClick(1)">
+                        <div class="legend-circle legend-circle-1 temperature" style="background-color: rgba(220, 20, 60, 0.99);"></div>
+                        <div class="legend-title">Temperature</div>
+                    </div>
+                    <div class="legend-item" onclick="handleLegendClick(2)">
+                        <div class="legend-circle legend-circle-2 pH" style="background-color: rgba(34, 139, 34, 0.99);"></div>
+                        <div class="legend-title">PH</div>
+                    </div>
+                    <div class="legend-item" onclick="handleLegendClick(3)">
+                        <div class="legend-circle legend-circle-3 oxygen" style="background-color: rgba(0, 191, 255, 0.99);"></div>
+                        <div class="legend-title">Oxygen</div>
+                    </div>
+                    
+                    <div class="legend-item" onclick="handleLegendClick(4)">
+                        <div class="legend-circle legend-circle-4 pressure" style="background-color: rgba(218, 165, 32, 0.99);"></div>
+                        <div class="legend-title">Pressure</div>
+                    </div>
+                </div>
+
+            </div>
+            
+
+
+            <div class="row graph-grid">
+                <div class="col-lg">
+                    <div class="shadow p-3 mb-5 bg-white rounded">
+                        <div class="graph-title">Temperature</div>
+                        <div class="y-axis-title">Temperature (Celcius)</div>
+                        <svg id="temperatureDataSvg" class="chart"></svg>
+                        <div class="x-axis-title">Time</div>
+                    </div>
+                </div>
+                <div class="col-lg">
+                    <div class="shadow p-3 mb-5 bg-white rounded">
+                        <div class="graph-title">PH</div>
+                        <div class="y-axis-title">PH</div>
+                        <svg id="pHDataSvg" class="chart"></svg>
+                        <div class="x-axis-title">Time</div>
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="row graph-grid">
+                <div class="col-lg">
+                    <div class="shadow p-3 mb-5 bg-white rounded">
+                        <div class="graph-title">Oxygen</div>
+                        <div class="y-axis-title">Oxygen (%)</div>
+                        <svg id="oxygenDataSvg" class="chart"></svg>
+                        <div class="x-axis-title">Time</div>
+                    </div>
+                </div>
+            
+                <div class="col-lg">
+                    <div class="shadow p-3 mb-5 bg-white rounded">
+                        <div class="graph-title">Pressure</div>
+                        <div class="y-axis-title">Pressure (PSI)</div>
+                        <svg id="pressureDataSvg" class="chart"></svg>
+                        <div class="x-axis-title">Time</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+    </div>
+</body>
+    
+    <script>
+        var temperatureData = {{ temperature_data | tojson }};
+        var pHData = {{ ph_data | tojson }};
+        var oxygenData = {{ oxygen_data | tojson }};
+        var pressureData = {{ pressure_data | tojson }};
+
+        var normalizedTemperatureData = {{ normalized_temperature_data | tojson }};
+        var normalizedPHData = {{ normalized_ph_data | tojson }};
+        var normalizedOxygenData = {{ normalized_oxygen_data | tojson }};
+        var normalizedPressureData = {{ normalized_pressure_data | tojson }};
+
+        var temperatureData15Min = {{ temperature_15_data | tojson }};
+        var pHData15Min = {{ ph_15_data | tojson }};
+        var oxygenData15Min = {{ oxygen_15_data | tojson }};
+        var pressureData15Min = {{ pressure_15_data | tojson }};
+
+        var temperatureData30Min = {{ temperature_30_data | tojson }};
+        var pHData30Min = {{ ph_30_data | tojson }};
+        var oxygenData30Min = {{ oxygen_30_data | tojson }};
+        var pressureData30Min = {{ pressure_30_data | tojson }};
+
+    </script>
+    <script src="{{url_for('static', filename='dashboard.js')}}"></script>
+</html>

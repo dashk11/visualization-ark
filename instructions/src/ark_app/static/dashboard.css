@@ -1,0 +1,61 @@
+*{
+    overflow: visible;
+    transition: background-color 200ms ease-out;
+}
+
+.chart{
+    width: 100%;
+    height: 100%;
+    padding: 50px;
+}
+
+.graph-grid{
+    margin-top: 20px;
+}
+.graph-title{
+    display: flex;
+    justify-content: center;
+    font-weight: 900;
+    border-bottom: .5px solid rgba(112, 112, 112, 0.541);
+}
+.y-axis-title{
+    position: absolute;
+    margin-top: 10%;
+    margin-left: -7%;
+    transform: rotate(-90deg);
+    height: 20px;
+    width: 200px;
+    display: flex;
+    justify-content: center;
+}
+
+.x-axis-title{
+    display: flex;
+    justify-content: center;
+}
+
+.legend {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  padding: 10px;
+}
+
+.legend-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+}
+
+.legend-circle {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  margin-bottom: 5px;
+  border: 1px solid black;
+}
+
+.legend-title {
+  font-size: 12px;
+}

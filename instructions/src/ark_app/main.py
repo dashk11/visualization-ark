@@ -1,4 +1,6 @@
-"""Module for the main entrypoint to the application"""
+"""Module for the main entrypoint to the application."""
+
+
 from .app import app
 
 __all__ = ["main"]
@@ -11,4 +13,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

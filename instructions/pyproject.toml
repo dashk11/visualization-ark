@@ -4,7 +4,6 @@ description = "Application to visualize real-time process data"
 dependencies = [
     "flask",
     "psycopg2-binary",
-    "plotly",
     "pandas",
 ]
 version = "0.0.0"

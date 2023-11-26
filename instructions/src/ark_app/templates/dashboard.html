@@ -10,11 +10,20 @@
 <body style="font-family: Gabarito; background-color: #fbfbfd;">
     <div>
         <div class="container">
-            <!-- <div class="shadow p-3 mb-5 rounded" style="padding: 20px 0; margin-top: 20px; background-color: #E3F4F4;"> -->
+
+            <div class="shadow p-2 mb-5 rounded dashboard-title">
+                <h2  style="display:flex; align-items:center; justify-content:center; font-weight: 800;">
+                    Bioreactor Dashboard
+                </h2>
+                <li>1. Adjust the sliding window to visualize a certain timeframe.</li>
+                <li>2. Use dropdown to select data aggregated on 15m and 30m durations.</li>
+                <li>3. Click on legend to enable/disable certain sensor data.</li>
+            </div>
+        </div>
+        <div class="container">
                 <div class="shadow p-3 mb-5 bg-white rounded">
                     <svg id="multilineSvg" class="chart"></svg>
                 </div>
-            <!-- </div> -->
         </div>
 
         <div class="container">
@@ -48,18 +57,14 @@
                         <div class="legend-title">Pressure</div>
                     </div>
                 </div>
-
             </div>
-            
-
-
             <div class="row graph-grid">
                 <div class="col-lg">
                     <div class="shadow p-3 mb-5 bg-white rounded">
                         <div class="graph-title">Temperature</div>
                         <div class="y-axis-title">Temperature (Celcius)</div>
                         <svg id="temperatureDataSvg" class="chart"></svg>
-                        <div class="x-axis-title">Time</div>
+                        <div class="x-axis-title">Time (2023-04-19)</div>
                     </div>
                 </div>
                 <div class="col-lg">
@@ -67,7 +72,7 @@
                         <div class="graph-title">PH</div>
                         <div class="y-axis-title">PH</div>
                         <svg id="pHDataSvg" class="chart"></svg>
-                        <div class="x-axis-title">Time</div>
+                        <div class="x-axis-title">Time (2023-04-19)</div>
                     </div>
                 </div>
             </div>
@@ -79,7 +84,7 @@
                         <div class="graph-title">Oxygen</div>
                         <div class="y-axis-title">Oxygen (%)</div>
                         <svg id="oxygenDataSvg" class="chart"></svg>
-                        <div class="x-axis-title">Time</div>
+                        <div class="x-axis-title">Time (2023-04-19)</div>
                     </div>
                 </div>
             
@@ -88,7 +93,7 @@
                         <div class="graph-title">Pressure</div>
                         <div class="y-axis-title">Pressure (PSI)</div>
                         <svg id="pressureDataSvg" class="chart"></svg>
-                        <div class="x-axis-title">Time</div>
+                        <div class="x-axis-title">Time (2023-04-19)</div>
                     </div>
                 </div>
             </div>
@@ -99,25 +104,25 @@
 </body>
     
     <script>
-        var temperatureData = {{ temperature_data | tojson }};
-        var pHData = {{ ph_data | tojson }};
-        var oxygenData = {{ oxygen_data | tojson }};
-        var pressureData = {{ pressure_data | tojson }};
+        let temperatureData = {{ temperature_data | tojson }};
+        let pHData = {{ ph_data | tojson }};
+        let oxygenData = {{ oxygen_data | tojson }};
+        let pressureData = {{ pressure_data | tojson }};
 
-        var normalizedTemperatureData = {{ normalized_temperature_data | tojson }};
-        var normalizedPHData = {{ normalized_ph_data | tojson }};
-        var normalizedOxygenData = {{ normalized_oxygen_data | tojson }};
-        var normalizedPressureData = {{ normalized_pressure_data | tojson }};
+        let normalizedTemperatureData = {{ normalized_temperature_data | tojson }};
+        let normalizedPHData = {{ normalized_ph_data | tojson }};
+        let normalizedOxygenData = {{ normalized_oxygen_data | tojson }};
+        let normalizedPressureData = {{ normalized_pressure_data | tojson }};
 
-        var temperatureData15Min = {{ temperature_15_data | tojson }};
-        var pHData15Min = {{ ph_15_data | tojson }};
-        var oxygenData15Min = {{ oxygen_15_data | tojson }};
-        var pressureData15Min = {{ pressure_15_data | tojson }};
+        let temperatureData15Min = {{ temperature_15_data | tojson }};
+        let pHData15Min = {{ ph_15_data | tojson }};
+        let oxygenData15Min = {{ oxygen_15_data | tojson }};
+        let pressureData15Min = {{ pressure_15_data | tojson }};
 
-        var temperatureData30Min = {{ temperature_30_data | tojson }};
-        var pHData30Min = {{ ph_30_data | tojson }};
-        var oxygenData30Min = {{ oxygen_30_data | tojson }};
-        var pressureData30Min = {{ pressure_30_data | tojson }};
+        let temperatureData30Min = {{ temperature_30_data | tojson }};
+        let pHData30Min = {{ ph_30_data | tojson }};
+        let oxygenData30Min = {{ oxygen_30_data | tojson }};
+        let pressureData30Min = {{ pressure_30_data | tojson }};
 
     </script>
     <script src="{{url_for('static', filename='dashboard.js')}}"></script>

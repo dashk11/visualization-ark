@@ -1,4 +1,5 @@
-"""Module providing a Flask application with endpoints to display a dashboard.
+"""
+Module providing a Flask application with endpoints to display a dashboard.
 
 This application uses a PostgreSQL database to fetch and display data related to
 environmental measurements such as temperature, pH, oxygen, and pressure.
@@ -7,148 +8,128 @@ The data is processed and normalized for display.
 
 import datetime
 from collections import defaultdict
+from typing import Dict, List, Tuple, Any
 import os
+
 
 from flask import Flask, render_template
 
 from .pgclient import PgClient
+from .utils import sort_by_index
 
 app = Flask(__name__)
 
+sensor_tables = {
+    "temperature": "CM_HAM_DO_AI1/Temp_value",
+    "ph": "CM_HAM_PH_AI1/pH_value",
+    "oxygen": "CM_PID_DO/Process_DO",
+    "pressure": "CM_PRESSURE/Output"
+}
 
-def parse_datetime(dt_str):
-    return datetime.datetime.strptime(dt_str, "%Y-%m-%d %H:%M:%S")
 
+def aggregate_data(data: List[Tuple[datetime.datetime, Any]], interval_minutes: int = 15) -> List[Tuple[datetime.datetime, float]]:
+    """
+    Aggregate data points into specified time intervals and compute their averages.
 
-def aggregate_data(data, interval_minutes=15):
-    # Create a dictionary to store aggregated data
+    Args:
+        data: A list of tuples containing datetime objects and associated values.
+        interval_minutes: The time interval for aggregation in minutes. Defaults to 15.
+
+    Returns:
+        A list of tuples containing the averaged values for each time interval.
+    """
     aggregated_data = defaultdict(list)
 
-    # Process each data point
     for dt, value in data:
-
-        # Round down the datetime to the nearest interval
         rounded_dt = datetime.datetime(dt.year, dt.month, dt.day, dt.hour, dt.minute - dt.minute % interval_minutes)
-
-        # Add the value to the corresponding time slot
         aggregated_data[rounded_dt].append(value)
 
-    # Calculate average for each time slot
     averaged_data = {dt: sum(values) / len(values) for dt, values in aggregated_data.items()}
-
     return list(averaged_data.items())
 
 
-def normalize_data(data):
-    # Extract values for normalization
-    values = [x[1] for x in data]
+def normalize_data(data: List[Tuple[datetime.datetime, float]]) -> List[Tuple[datetime.datetime, float]]:
+    """
+    Normalize the value part of the data between 0 and 1.
 
-    # Compute min and max
+    Args:
+        data: A list of tuples containing datetime objects and associated values.
+
+    Returns:
+        The normalized data with values scaled between 0 and 1.
+    """
+    values = [x[1] for x in data]
     min_val = min(values)
     max_val = max(values)
 
-    # Normalize values and pair them back with their corresponding datetime
     normalized_data = [(x[0], (x[1] - min_val) / (max_val - min_val)) for x in data]
     return normalized_data
 
 
-def sort_by_index(arr, i):
-    arr.sort(key=lambda x: x[i])
+def get_sensor_data(pg_handler: PgClient, table_name: str) -> Tuple[List[Tuple], List[Tuple], List[Tuple], List[Tuple]]:
+    """
+    Retrieve and process sensor data from a PostgreSQL database.
+
+    Args:
+        pg_handler: An instance of the PgClient class for database operations.
+        table_name: The name of the table in the database from which to retrieve data.
+
+    Returns:
+        A tuple containing the raw data, normalized data, and aggregated data
+        for 15 and 30 minutes intervals, each sorted by datetime.
+    """
+    # Retrieve raw data
+    raw_data = pg_handler.get_time_value(table_name)
+    sort_by_index(arr=raw_data, i=0)
+
+    # Normalize data
+    normalized_data = normalize_data(raw_data)
+    sort_by_index(arr=normalized_data, i=0)
+
+    # Aggregate data for different intervals
+    data_15_mins = aggregate_data(raw_data, interval_minutes=15)
+    sort_by_index(arr=data_15_mins, i=0)
+    data_30_mins = aggregate_data(raw_data, interval_minutes=30)
+    sort_by_index(arr=data_30_mins, i=0)
+
+    return raw_data, normalized_data, data_15_mins, data_30_mins
 
 
-def get_handler():
-    return PgClient(
+def prepare_sensor_data_for_template(pg_handler: PgClient, sensor_tables: Dict[str, str]) -> Dict[str, List[Tuple]]:
+    """
+    Prepare sensor data for rendering in a template.
+
+    Args:
+        pg_handler: An instance of the PgClient class for database operations.
+        sensor_tables: A dictionary where keys are sensor names and values are table names.
+
+    Returns:
+        dict: A dictionary with keys corresponding to template variable names and values being the processed data.
+    """
+    sensor_data = {}
+    for sensor, table_name in sensor_tables.items():
+        try:
+            data = get_sensor_data(pg_handler, table_name)
+            sensor_data.update({
+                f'{sensor}_data': data[0],
+                f'normalized_{sensor}_data': data[1],
+                f'{sensor}_15_data': data[2],
+                f'{sensor}_30_data': data[3],
+            })
+        except Exception as e:
+            print(f"Error processing {sensor}: {e}")
+            # Handle the exception or continue to the next sensor
+    return sensor_data
+
+
+@app.route('/')
+def dashboard() -> str:
+    pg_handler = PgClient(
         host=os.getenv('POSTGRES_HOST'),
         user=os.getenv('POSTGRES_USER'),
         password=os.getenv('POSTGRES_PASSWORD'),
         db=os.getenv('POSTGRES_DB'),
-        port=os.getenv('POSTGRES_PORT')
+        port=int(os.getenv('POSTGRES_PORT'))
     )
-
-
-def get_temperature_data(pg_handler):
-    raw_temperature_data = pg_handler.get_time_value("CM_HAM_DO_AI1/Temp_value")
-    sort_by_index(arr=raw_temperature_data, i=0)
-    normalized_temperature_data = normalize_data(raw_temperature_data)
-    temperature_data_15_mins = aggregate_data(raw_temperature_data, interval_minutes=15)
-    temperature_data_30_mins = aggregate_data(raw_temperature_data, interval_minutes=30)
-    sort_by_index(arr=normalized_temperature_data, i=0)
-    sort_by_index(arr=temperature_data_15_mins, i=0)
-    return raw_temperature_data, normalized_temperature_data, temperature_data_15_mins, temperature_data_30_mins
-
-
-def get_ph_data(pg_handler):
-    raw_ph_data = pg_handler.get_time_value("CM_HAM_PH_AI1/pH_value")
-    sort_by_index(arr=raw_ph_data, i=0)
-    normalized_ph_data = normalize_data(raw_ph_data)
-    ph_data_15_mins = aggregate_data(raw_ph_data, interval_minutes=15)
-    ph_data_30_mins = aggregate_data(raw_ph_data, interval_minutes=30)
-    sort_by_index(arr=normalized_ph_data, i=0)
-    sort_by_index(arr=ph_data_15_mins, i=0)
-    return raw_ph_data, normalized_ph_data, ph_data_15_mins, ph_data_30_mins
-
-
-def get_oxygen_data(pg_handler):
-    raw_oxygen_data = pg_handler.get_time_value("CM_PID_DO/Process_DO")
-    sort_by_index(arr=raw_oxygen_data, i=0)
-    normalized_oxygen_data = normalize_data(raw_oxygen_data)
-    oxygen_data_15_mins = aggregate_data(raw_oxygen_data, interval_minutes=15)
-    oxygen_data_30_mins = aggregate_data(raw_oxygen_data, interval_minutes=30)
-    sort_by_index(arr=normalized_oxygen_data, i=0)
-    sort_by_index(arr=oxygen_data_15_mins, i=0)
-    return raw_oxygen_data, normalized_oxygen_data, oxygen_data_15_mins, oxygen_data_30_mins
-
-
-def get_pressure_data(pg_handler):
-    raw_pressure_data = pg_handler.get_time_value("CM_PRESSURE/Output")
-    sort_by_index(arr=raw_pressure_data, i=0)
-    normalized_pressure_data = normalize_data(raw_pressure_data)
-    pressure_data_15_mins = aggregate_data(raw_pressure_data, interval_minutes=15)
-    pressure_data_30_mins = aggregate_data(raw_pressure_data, interval_minutes=30)
-    sort_by_index(arr=normalized_pressure_data, i=0)
-    sort_by_index(arr=pressure_data_15_mins, i=0)
-    return raw_pressure_data, normalized_pressure_data, pressure_data_15_mins, pressure_data_30_mins
-
-
-@app.route('/')
-def dashboard():
-    pg_handler = get_handler()
-    temperature_data, normalized_temperature_data, temperature_15_data, temperature_30_data = get_temperature_data(pg_handler)
-    ph_data, normalized_ph_data, ph_15_data, ph_30_data = get_ph_data(pg_handler)
-    oxygen_data, normalized_oxygen_data, oxygen_15_data, oxygen_30_data = get_oxygen_data(pg_handler)
-    pressure_data, normalized_pressure_data, pressure_15_data, pressure_30_data = get_pressure_data(pg_handler)
-
-    # get_normalized_data(pg_handler, temperature_data, ph_data, pressure_data)
-
-    # Similarly fetch pH, DO, and pressure data
-    return render_template(
-        'dashboard.html',
-
-        # raw data
-        temperature_data=temperature_data,
-        ph_data=ph_data,
-        oxygen_data=oxygen_data,
-        pressure_data=pressure_data,
-
-        # normalized data
-        normalized_temperature_data=normalized_temperature_data,
-        normalized_ph_data=normalized_ph_data,
-        normalized_oxygen_data=normalized_oxygen_data,
-        normalized_pressure_data=normalized_pressure_data,
-
-        # aggregated data
-        temperature_15_data=temperature_15_data,
-        ph_15_data=ph_15_data,
-        oxygen_15_data=oxygen_15_data,
-        pressure_15_data=pressure_15_data,
-
-        temperature_30_data=temperature_30_data,
-        ph_30_data=ph_30_data,
-        oxygen_30_data=oxygen_30_data,
-        pressure_30_data=pressure_30_data,
-    )
-
-
-if __name__ == '__main__':
-    # The host is set to '0.0.0.0' to make the server externally visible.
-    app.run(host='0.0.0.0', port=8000)
+    sensor_data_for_template = prepare_sensor_data_for_template(pg_handler, sensor_tables)
+    return render_template('dashboard.html', **sensor_data_for_template)

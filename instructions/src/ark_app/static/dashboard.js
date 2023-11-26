@@ -1,10 +1,3 @@
-
-
-
-
-
-// Parse the date / time
-
 let formatDate = d3.timeFormat("%Y-%m-%d %H:%M:%S");
 
 let parseTime = d3.timeParse("%a, %d %b %Y %H:%M:%S GMT");
@@ -13,8 +6,7 @@ let parseTime3 = d3.timeParse("%Y-%m-%d %H:%M:%S");
 
 let selectedDataAggregationInput = "daily";
 
-                    
-                    
+let xScaleMultiline, yScaleMultiline;
                     
 let colorScheme = {
     temperature: "rgba(220, 20, 60, 0.99)",
@@ -46,13 +38,10 @@ function handleLegendClick(legendNumber) {
   const legendItem = document.querySelector(`.legend-circle-${legendNumber}`);
   
   // Log the class name
-  console.log(`Clicked on legend with class: ${legendItem.className.split(" ")[2]}`);
-    console.log()
-    var r = legendItem.style.backgroundColor.split(")")[0].split("rgba(")[1].split(",")[0]
-    var g = legendItem.style.backgroundColor.split(")")[0].split("rgba(")[1].split(",")[1]
-    var b = legendItem.style.backgroundColor.split(")")[0].split("rgba(")[1].split(",")[2]
-    var a = legendItem.style.backgroundColor.split(")")[0].split("rgba(")[1].split(",")[3]
-    console.log(`rgba(${r},${g},${b},${a})`)
+    let r = legendItem.style.backgroundColor.split(")")[0].split("rgba(")[1].split(",")[0]
+    let g = legendItem.style.backgroundColor.split(")")[0].split("rgba(")[1].split(",")[1]
+    let b = legendItem.style.backgroundColor.split(")")[0].split("rgba(")[1].split(",")[2]
+    let a = legendItem.style.backgroundColor.split(")")[0].split("rgba(")[1].split(",")[3]
   // Change background color to white
     if (a === " 0.99") {
         legendItem.style.backgroundColor = `rgba(${r},${g},${b},${0})`
@@ -62,7 +51,7 @@ function handleLegendClick(legendNumber) {
     
     filters.selectedType[legendItem.className.split(" ")[2]] = !filters.selectedType[legendItem.className.split(" ")[2]];
 
-    // drawAggregateChart();
+    drawAggregateChart(true);
     plotSubGraphs();
 }
 
@@ -77,8 +66,6 @@ function plotSubGraphs() {
     drawOxygenChart();
     drawPressureChart();
 }
-
-
 
 function standardizeTimeSeriesData(data, applyFilter=false) {
     data = data.map(function (d) {
@@ -97,21 +84,26 @@ function standardizeTimeSeriesData(data, applyFilter=false) {
     return data
 }
 
-function drawAggregateChart() {
+function drawAggregateChart(updateOnly=false) {
     let multilineSvg = d3.select("#multilineSvg")
-    normalizedTemperatureData = standardizeTimeSeriesData(normalizedTemperatureData);
-    normalizedPHData = standardizeTimeSeriesData(normalizedPHData);
-    normalizedOxygenData = standardizeTimeSeriesData(normalizedOxygenData);
-    normalizedPressureData = standardizeTimeSeriesData(normalizedPressureData);
+    data1 = standardizeTimeSeriesData(normalizedTemperatureData);
+    data2 = standardizeTimeSeriesData(normalizedPHData);
+    data3 = standardizeTimeSeriesData(normalizedOxygenData);
+    data4 = standardizeTimeSeriesData(normalizedPressureData);
 
-    drawMultiLineChart(normalizedTemperatureData, normalizedPHData, normalizedOxygenData, normalizedPressureData, multilineSvg)
+    if(updateOnly){
+        renderMultilineData(multilineSvg, data1, data2, data3, data4)
+    }else{
+        drawMultiLineChart(data1, data2, data3, data4, multilineSvg)
+    }
+
+
 }   
 
 
 function drawTemperatureChart() {
     let temperatureDataSvg = d3.select("#temperatureDataSvg");
     transformedData = standardizeTimeSeriesData(filters.data[selectedDataAggregationInput].temperature, true);
-    console.log("temp", transformedData)
     drawLineChart(transformedData, temperatureDataSvg, colorScheme.temperature, filters.selectedType.temperature)
 }
 
@@ -179,7 +171,7 @@ function drawLineChart(transformedData, svg, lineColor, isActive) {
     )
 
     // Create a tooltip
-    var tooltip = d3.select("body")
+    let tooltip = d3.select("body")
         .append("div")
         .attr("class", "tooltip")
         .style("opacity", 0)
@@ -193,7 +185,7 @@ function drawLineChart(transformedData, svg, lineColor, isActive) {
         .style("pointer-events", "none");
 
     // Create crosshair lines
-    var crosshairX = svg.append("line")
+    let crosshairX = svg.append("line")
         .attr("class", "crosshair")
         .style("stroke", "gray")
         .style("stroke-dasharray", "3,3")
@@ -201,7 +193,7 @@ function drawLineChart(transformedData, svg, lineColor, isActive) {
         .attr("y1", 0)
         .attr("y2", height);
 
-    var crosshairY = svg.append("line")
+    let crosshairY = svg.append("line")
         .attr("class", "crosshair")
         .style("stroke", "gray")
         .style("stroke-dasharray", "3,3")
@@ -223,8 +215,8 @@ function drawLineChart(transformedData, svg, lineColor, isActive) {
 
     // Mousemove function
     function mousemove(event) {
-        var mouseX = d3.pointer(event, this)[0];
-        var x0 = x.invert(mouseX),
+        let mouseX = d3.pointer(event, this)[0];
+        let x0 = x.invert(mouseX),
             i = d3.bisector(function(d) { return d.date; }).left(transformedData, x0, 1),
             d0 = transformedData[i - 1],
             d1 = transformedData[i],
@@ -247,93 +239,30 @@ function drawLineChart(transformedData, svg, lineColor, isActive) {
 // multilineSvg
 function drawMultiLineChart(data1, data2, data3, data4, svg) {
     // Set the dimensions and margins of the graph
-    let margin = { top: 20, right: 20, bottom: 30, left: 0 },
+    let margin = { top: 20, right: 20, bottom: 30, left: 0 }
 
     width = svg.style('width').replace('px','')-100;
     height = svg.style('height').replace('px', '')-70;
     
     
-    let x = d3.scaleTime()
+    xScaleMultiline = d3.scaleTime()
         .domain(d3.extent(data1, function(d) { return d.date; }))
         .range([ 0, width+margin.left ]);
-    let y = d3.scaleLinear()
+    yScaleMultiline = d3.scaleLinear()
         .domain([0, 1])
         .range([height, 0]);
     
     svg.append("g")
         .attr("transform", `translate(${margin.left},${height})`)
-        .call(d3.axisBottom(x));
+        .call(d3.axisBottom(xScaleMultiline));
 
     svg.append("g")
         .attr("transform", `translate(${margin.left},0)`)
-        .call(d3.axisLeft(y));
+        .call(d3.axisLeft(yScaleMultiline));
 
-    let paddingLeft = 2;
-
-    let types = [["pressure", data4], ["temperature", data1], ["pH", data2], ["oxygen", data3]]
-    types.forEach((type, i) => {
-        console.log("type", type)
-        svg.selectAll(`.${type[0]}Line`)
-            .data([type[1]])
-            .join("path")
-            .attr("class", `.${type}Line`)
-            .attr("fill", "none")
-            .attr("stroke", colorScheme[type[0]])
-            .attr("stroke-width", 1)
-            .attr("d", d3.line()
-            .x(function(d) { return paddingLeft+margin.left+x(d.date) })
-            .y(function(d) { return y(d.value) })
-        )  
-    })
-
-    // svg.selectAll(".temperatureLine")
-    //     .data([data1])
-    //     .join("path")
-    //     .attr("class", "temperatureLine")
-    //     .attr("fill", "none")
-    //     .attr("stroke", colorScheme.temperature)
-    //     .attr("stroke-width", 1)
-    //     .attr("d", d3.line()
-    //     .x(function(d) { return paddingLeft+margin.left+x(d.date) })
-    //     .y(function(d) { return y(d.value) })
-    // )  
-    // svg.selectAll(".pHLine")
-    //     .data([data2])
-    //     .join("path")
-    //     .attr("class", "pHLine")
-    //     .attr("fill", "none")
-    //     .attr("stroke", colorScheme.pH)
-    //     .attr("stroke-width", 1)
-    //     .attr("d", d3.line()
-    //     .x(function(d) { return paddingLeft+margin.left+x(d.date) })
-    //     .y(function(d) { return y(d.value) })
-    // )  
-    // svg.selectAll(".oxygenLine")
-    //     .data([data3])
-    //     .join("path")
-    //     .attr("class", "oxygenLine")
-    //     .attr("fill", "none")
-    //     .attr("stroke", colorScheme.oxygen)
-    //     .attr("stroke-width", 1)
-    //     .attr("d", d3.line()
-    //     .x(function(d) { return paddingLeft+margin.left+x(d.date) })
-    //     .y(function(d) { return y(d.value) })
-    // )  
-    // svg.selectAll(".pressureLine")
-    //     .data([data4])
-    //     .join("path")
-    //     .attr("class", "pressureLine")
-    //     .attr("fill", "none")
-    //     .attr("stroke", colorScheme.pressure)
-    //     .attr("stroke-width", 1)
-    //     .attr("d", d3.line()
-    //     .x(function(d) { return paddingLeft+margin.left+x(d.date) })
-    //     .y(function(d) { return y(d.value) })
-    // )
-
+    renderMultilineData(svg, data1, data2, data3, data4)
 
     // Brush setup
-
     brush = d3.brushX()
     .extent([[margin.left, -10], [width, height]])
         .on("end", brushEnded);
@@ -342,12 +271,9 @@ function drawMultiLineChart(data1, data2, data3, data4, svg) {
     .extent([[margin.left, -10], [width, height]])
     .on("end", brushEnded);
 
-    // Append brush to the SVG
     let brushG = svg.append("g")
     .attr("class", "brush")
     .call(brush);
-
-    // Set the initial brush selection to cover the full width and height
     brushG.call(brush.move, [margin.left, width+margin.left]);
 
     function brushEnded(event) {
@@ -355,17 +281,11 @@ function drawMultiLineChart(data1, data2, data3, data4, svg) {
             return;
         }
 
-        // Get the selected range in terms of pixels
         let [x0, x1] = event.selection;
 
-        // Convert pixel values back to dates
-        let selectedStartDate = x.invert(x0);
-        let selectedEndDate = x.invert(x1);
+        let selectedStartDate = xScaleMultiline.invert(x0);
+        let selectedEndDate = xScaleMultiline.invert(x1);
 
-        // Log the selected date range
-
-        console.log("Selected start date:", parseTime3(formatDate(selectedStartDate)));
-        console.log("Selected end date:", parseTime3(formatDate(selectedEndDate)));
         filters.startTime = parseTime3(formatDate(selectedStartDate))
         filters.endTime = parseTime3(formatDate(selectedEndDate))
         plotSubGraphs();
@@ -374,3 +294,28 @@ function drawMultiLineChart(data1, data2, data3, data4, svg) {
     
 }
 
+function renderMultilineData(svg, data1, data2, data3, data4){
+    let margin = { top: 20, right: 20, bottom: 30, left: 0 };
+    let paddingLeft = 2;
+    let types = [["pressure", data4], ["temperature", data1], ["pH", data2], ["oxygen", data3]]
+
+    types.forEach((type, i) => {
+        let multiLineData = [];
+        if (filters.selectedType[type[0]]){
+            multiLineData = [type[1]];
+        }
+        svg.selectAll(`.${type[0]}Line`)
+            .data(multiLineData)
+            .join("path")
+            .transition()
+            .attr("class", `${type[0]}Line`)
+            .attr("fill", "none")
+            .attr("stroke", colorScheme[type[0]])
+            .attr("stroke-width", 1)
+            .attr("d", d3.line()
+                .x(function(d) { return paddingLeft+margin.left+xScaleMultiline(d.date) })
+                .y(function(d) { return yScaleMultiline(d.value) })
+            )
+    })
+
+}
